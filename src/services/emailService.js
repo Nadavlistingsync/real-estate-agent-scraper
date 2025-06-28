@@ -5,6 +5,8 @@ const { emailLogger, logEmailAttempt, logError } = require('../utils/logger');
 const { getFirstName, generateSubject, generateEmailBody, isValidEmail } = require('../utils/emailUtils');
 const config = require('../config/config');
 
+const isVercel = !!process.env.VERCEL;
+
 class EmailService {
   constructor() {
     this.transporter = null;
@@ -12,7 +14,7 @@ class EmailService {
     this.failedEmails = new Set();
     this.dailyCount = 0;
     this.lastResetDate = new Date().toDateString();
-    this.emailLogPath = 'logs/email_log.json';
+    this.emailLogPath = isVercel ? '/tmp/logs/email_log.json' : 'logs/email_log.json';
     this.loadEmailLog();
   }
 

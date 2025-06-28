@@ -3,6 +3,7 @@ const path = require('path');
 const csv = require('csv-parser');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const { scraperLogger, logError } = require('../utils/logger');
+const isVercel = !!process.env.VERCEL;
 
 class CSVService {
   constructor() {

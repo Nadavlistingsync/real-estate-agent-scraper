@@ -8,8 +8,7 @@
     "dev": "nodemon src/index.js",
     "build": "echo 'No build step required for Node.js'",
     "test": "echo 'No tests specified'",
-    "deploy": "npm start",
-    "vercel-build": "echo 'Vercel build completed'"
+    "deploy": "npm start"
   },
   "keywords": [
     "real-estate",

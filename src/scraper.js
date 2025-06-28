@@ -1,213 +1,141 @@
+const puppeteer = require('puppeteer');
+const RealtorScraper = require('./scrapers/realtorScraper');
+const ZillowScraper = require('./scrapers/zillowScraper');
 const TestScraper = require('./scrapers/testScraper');
-// const ZillowScraper = require('./scrapers/zillowScraper');
-// const RealtorScraper = require('./scrapers/realtorScraper');
 const CSVService = require('./services/csvService');
-const { logger, scraperLogger, logError } = require('./utils/logger');
-const { isUSAgent, cleanAgentData } = require('./utils/emailUtils');
+const { logger, logError } = require('./utils/logger');
 const config = require('./config/config');
 
 class ScraperOrchestrator {
   constructor() {
     this.csvService = new CSVService();
-    this.scrapers = [
-      new TestScraper()
-      // new ZillowScraper(),
-      // new RealtorScraper()
-    ];
-    this.allAgents = [];
+    this.stats = {
+      totalScraped: 0,
+      totalEmails: 0,
+      startTime: null,
+      endTime: null,
+      errors: []
+    };
+    
+    // Check if we're in a serverless environment
+    this.isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+    
+    if (this.isServerless) {
+      logger.warn('Running in serverless environment - scraping capabilities may be limited');
+    }
   }
 
-  /**
-   * Run the complete scraping process
-   */
   async run() {
     try {
-      logger.info('Starting real estate agent scraping process');
+      this.stats.startTime = new Date();
+      logger.info('Starting scraping orchestration');
       
-      // Backup existing CSV if it exists
-      await this.csvService.backupCSV();
-
-      // Run all scrapers
-      for (const scraper of this.scrapers) {
-        await this.runScraper(scraper);
+      if (this.isServerless) {
+        logger.warn('Serverless environment detected - using test scraper only');
+        return await this.runTestScraping();
       }
-
-      // Process and save results
-      await this.processResults();
-
-      // Generate final report
-      await this.generateReport();
-
-      logger.info('Scraping process completed successfully');
-      return this.allAgents;
-
+      
+      const agents = [];
+      
+      // Run scrapers in parallel for better performance
+      const scraperPromises = [
+        this.runRealtorScraping(),
+        this.runZillowScraping()
+      ];
+      
+      const results = await Promise.allSettled(scraperPromises);
+      
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          agents.push(...result.value);
+          logger.info(`Scraper ${index + 1} completed successfully`);
+        } else {
+          logger.error(`Scraper ${index + 1} failed:`, result.reason);
+          this.stats.errors.push(result.reason);
+        }
+      });
+      
+      // Remove duplicates
+      const uniqueAgents = this.removeDuplicates(agents);
+      
+      // Save to CSV
+      await this.csvService.saveAgentsToCSV(uniqueAgents);
+      
+      this.stats.endTime = new Date();
+      this.stats.totalScraped = uniqueAgents.length;
+      this.stats.totalEmails = uniqueAgents.filter(agent => agent.email).length;
+      
+      logger.info(`Scraping completed. Found ${uniqueAgents.length} unique agents with ${this.stats.totalEmails} emails`);
+      
+      return uniqueAgents;
+      
     } catch (error) {
       logError('scraper', error, { context: 'ScraperOrchestrator.run' });
+      this.stats.errors.push(error.message);
       throw error;
     }
   }
 
-  /**
-   * Run a single scraper
-   */
-  async runScraper(scraper) {
+  async runRealtorScraping() {
     try {
-      const scraperName = scraper.constructor.name;
-      logger.info(`Starting ${scraperName}`);
-
-      const startTime = Date.now();
+      logger.info('Starting Realtor.com scraping');
+      const scraper = new RealtorScraper();
       const agents = await scraper.scrape();
-      const endTime = Date.now();
-
-      const duration = Math.round((endTime - startTime) / 1000);
-      logger.info(`${scraperName} completed in ${duration}s with ${agents.length} agents`);
-
-      // Filter and clean agents
-      const validAgents = agents
-        .filter(agent => agent && agent.name && isUSAgent(agent))
-        .map(agent => cleanAgentData(agent));
-
-      this.allAgents.push(...validAgents);
-
-      logger.info(`${scraperName} found ${validAgents.length} valid US agents`);
-
+      logger.info(`Realtor.com scraping completed: ${agents.length} agents found`);
+      return agents;
     } catch (error) {
-      logError('scraper', error, { 
-        context: 'ScraperOrchestrator.runScraper', 
-        scraper: scraper.constructor.name 
-      });
+      logError('scraper', error, { context: 'runRealtorScraping' });
+      return [];
     }
   }
 
-  /**
-   * Process and save results
-   */
-  async processResults() {
+  async runZillowScraping() {
     try {
-      logger.info(`Processing ${this.allAgents.length} total agents`);
-
-      // Remove duplicates based on email
-      const uniqueAgents = this.removeDuplicates();
-      logger.info(`After deduplication: ${uniqueAgents.length} unique agents`);
-
-      // Save to CSV
-      const success = await this.csvService.writeAgentsToCSV(uniqueAgents);
-      
-      if (success) {
-        logger.info(`Successfully saved ${uniqueAgents.length} agents to CSV`);
-      } else {
-        throw new Error('Failed to save agents to CSV');
-      }
-
-      this.allAgents = uniqueAgents;
-
+      logger.info('Starting Zillow scraping');
+      const scraper = new ZillowScraper();
+      const agents = await scraper.scrape();
+      logger.info(`Zillow scraping completed: ${agents.length} agents found`);
+      return agents;
     } catch (error) {
-      logError('scraper', error, { context: 'ScraperOrchestrator.processResults' });
-      throw error;
+      logError('scraper', error, { context: 'runZillowScraping' });
+      return [];
     }
   }
 
-  /**
-   * Remove duplicate agents
-   */
-  removeDuplicates() {
-    const uniqueAgents = [];
-    const seenEmails = new Set();
-    const seenNames = new Set();
-
-    for (const agent of this.allAgents) {
-      const emailKey = agent.email.toLowerCase();
-      const nameKey = agent.name.toLowerCase();
-
-      // Skip if we've seen this email or name before
-      if (emailKey && seenEmails.has(emailKey)) continue;
-      if (nameKey && seenNames.has(nameKey)) continue;
-
-      if (emailKey) seenEmails.add(emailKey);
-      if (nameKey) seenNames.add(nameKey);
-      uniqueAgents.push(agent);
-    }
-
-    return uniqueAgents;
-  }
-
-  /**
-   * Generate final report
-   */
-  async generateReport() {
+  async runTestScraping() {
     try {
-      const stats = await this.csvService.getCSVStats();
-      
-      if (stats) {
-        logger.info('=== SCRAPING REPORT ===');
-        logger.info(`Total agents found: ${stats.total}`);
-        logger.info(`Agents with emails: ${stats.withEmails}`);
-        logger.info(`Agents without emails: ${stats.withoutEmails}`);
-        logger.info(`Unique emails: ${stats.uniqueEmails}`);
-        logger.info(`States covered: ${stats.states}`);
-        logger.info(`Cities covered: ${stats.cities}`);
-        logger.info('=======================');
-      }
-
-      // Log some sample agents
-      const agentsWithEmails = this.allAgents.filter(agent => agent.email);
-      if (agentsWithEmails.length > 0) {
-        logger.info('Sample agents with emails:');
-        agentsWithEmails.slice(0, 5).forEach(agent => {
-          logger.info(`- ${agent.name} (${agent.email}) - ${agent.city}, ${agent.state}`);
-        });
-      }
-
+      logger.info('Starting test scraping (serverless mode)');
+      const scraper = new TestScraper();
+      const agents = await scraper.scrape();
+      logger.info(`Test scraping completed: ${agents.length} agents found`);
+      return agents;
     } catch (error) {
-      logError('scraper', error, { context: 'ScraperOrchestrator.generateReport' });
+      logError('scraper', error, { context: 'runTestScraping' });
+      return [];
     }
   }
 
-  /**
-   * Get scraping statistics
-   */
+  removeDuplicates(agents) {
+    const seen = new Set();
+    return agents.filter(agent => {
+      const key = `${agent.email}-${agent.name}-${agent.city}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }
+
   getStats() {
-    const agentsWithEmails = this.allAgents.filter(agent => agent.email);
-    const agentsWithoutEmails = this.allAgents.filter(agent => !agent.email);
-
     return {
-      total: this.allAgents.length,
-      withEmails: agentsWithEmails.length,
-      withoutEmails: agentsWithoutEmails.length,
-      uniqueEmails: new Set(agentsWithEmails.map(a => a.email.toLowerCase())).size,
-      states: new Set(this.allAgents.map(a => a.state).filter(s => s)).size,
-      cities: new Set(this.allAgents.map(a => a.city).filter(c => c)).size
+      ...this.stats,
+      duration: this.stats.endTime ? 
+        Math.round((this.stats.endTime - this.stats.startTime) / 1000) : 0,
+      errorCount: this.stats.errors.length,
+      isServerless: this.isServerless
     };
   }
-}
-
-// Main execution function
-async function main() {
-  const orchestrator = new ScraperOrchestrator();
-  
-  try {
-    await orchestrator.run();
-    
-    const stats = orchestrator.getStats();
-    console.log('\n=== SCRAPING COMPLETED ===');
-    console.log(`Total agents: ${stats.total}`);
-    console.log(`With emails: ${stats.withEmails}`);
-    console.log(`Without emails: ${stats.withoutEmails}`);
-    console.log(`Unique emails: ${stats.uniqueEmails}`);
-    console.log(`States: ${stats.states}`);
-    console.log(`Cities: ${stats.cities}`);
-    console.log('==========================\n');
-    
-    process.exit(0);
-  } catch (error) {
-    logger.error('Scraping failed:', error);
-    process.exit(1);
-  }
-}
-
-// Run if called directly
-if (require.main === module) {
-  main();
 }
 
 module.exports = ScraperOrchestrator; 

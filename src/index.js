@@ -3,16 +3,24 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 
-const ScraperOrchestrator = require('./scraper');
 const EmailSender = require('./emailSender');
 const CSVService = require('./services/csvService');
 const { logger, apiLogger, logError } = require('./utils/logger');
 const config = require('./config/config');
 
+// Conditionally import scraper to handle serverless environment
+let ScraperOrchestrator;
+try {
+  ScraperOrchestrator = require('./scraper');
+} catch (error) {
+  logger.warn('Scraper not available in serverless environment', { error: error.message });
+  ScraperOrchestrator = null;
+}
+
 class RealEstateScraperAPI {
   constructor() {
     this.app = express();
-    this.scraper = new ScraperOrchestrator();
+    this.scraper = ScraperOrchestrator ? new ScraperOrchestrator() : null;
     this.emailSender = new EmailSender();
     this.csvService = new CSVService();
     
@@ -67,8 +75,11 @@ class RealEstateScraperAPI {
         success: true,
         message: 'Real Estate Agent Scraper API',
         version: '1.0.0',
+        environment: process.env.NODE_ENV || 'development',
+        serverless: !!process.env.VERCEL,
         endpoints: {
           health: 'GET /health',
+          dashboard: 'GET /dashboard',
           scrape: 'POST /api/scrape',
           email: 'POST /api/email/send',
           testEmail: 'POST /api/email/test',
@@ -84,12 +95,25 @@ class RealEstateScraperAPI {
 
     // Health check
     this.app.get('/health', (req, res) => {
-      res.json({ status: 'ok', timestamp: new Date().toISOString() });
+      res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || 'development',
+        serverless: !!process.env.VERCEL
+      });
     });
 
     // Scraping routes
     this.app.post('/api/scrape', async (req, res) => {
       try {
+        if (!this.scraper) {
+          return res.status(503).json({
+            success: false,
+            error: 'Scraping is not available in serverless environment. Please run scraping locally and upload CSV data.',
+            suggestion: 'Use the CSV upload feature or run scraping on a local machine'
+          });
+        }
+
         logger.info('Starting scraping via API');
         const agents = await this.scraper.run();
         const stats = this.scraper.getStats();
@@ -288,6 +312,9 @@ class RealEstateScraperAPI {
 
     // Dashboard route
     this.app.get('/dashboard', (req, res) => {
+      const isServerless = !!process.env.VERCEL;
+      const scraperAvailable = !!this.scraper;
+      
       res.send(`
         <!DOCTYPE html>
         <html lang="en">
@@ -309,15 +336,26 @@ class RealEstateScraperAPI {
                 .button.danger:hover { background: #c0392b; }
                 .button.success { background: #27ae60; }
                 .button.success:hover { background: #229954; }
+                .button:disabled { background: #bdc3c7; cursor: not-allowed; }
                 .log { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; font-family: monospace; height: 200px; overflow-y: auto; margin-top: 20px; }
                 .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
                 .status.success { background: #d5f4e6; color: #27ae60; }
                 .status.error { background: #fadbd8; color: #e74c3c; }
+                .status.warning { background: #fef9e7; color: #f39c12; }
+                .environment-info { background: #e8f4fd; padding: 15px; border-radius: 5px; margin-bottom: 20px; text-align: center; }
             </style>
         </head>
         <body>
             <div class="container">
                 <h1>🏠 Real Estate Agent Scraper Dashboard</h1>
+                
+                ${isServerless ? `
+                <div class="environment-info">
+                    <strong>🌐 Serverless Environment Detected</strong><br>
+                    ${scraperAvailable ? '✅ Scraping available' : '⚠️ Scraping not available in serverless mode'}
+                    <br><small>Upload CSV data or run scraping locally</small>
+                </div>
+                ` : ''}
                 
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -339,7 +377,7 @@ class RealEstateScraperAPI {
                 </div>
 
                 <div style="text-align: center; margin: 20px 0;">
-                    <button class="button success" onclick="startScraping()">🚀 Start Scraping</button>
+                    <button class="button success" onclick="startScraping()" ${!scraperAvailable ? 'disabled' : ''}>🚀 Start Scraping</button>
                     <button class="button" onclick="sendEmails()">📧 Send Emails</button>
                     <button class="button" onclick="refreshStats()">🔄 Refresh Stats</button>
                 </div>
@@ -454,10 +492,11 @@ class RealEstateScraperAPI {
   }
 
   start() {
-    const port = config.server.port;
+    const port = process.env.PORT || config.server.port;
     this.app.listen(port, () => {
       logger.info(`Real Estate Scraper API started on port ${port}`);
-      logger.info(`Environment: ${config.server.env}`);
+      logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      logger.info(`Serverless: ${!!process.env.VERCEL}`);
       logger.info(`Health check: http://localhost:${port}/health`);
     });
   }

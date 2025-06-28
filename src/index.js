@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
+const multer = require('multer');
+const csvParser = require('csv-parser');
 
 const EmailSender = require('./emailSender');
 const CSVService = require('./services/csvService');
@@ -16,6 +18,8 @@ try {
   logger.warn('Scraper not available in serverless environment', { error: error.message });
   ScraperOrchestrator = null;
 }
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 class RealEstateScraperAPI {
   constructor() {
@@ -310,6 +314,32 @@ class RealEstateScraperAPI {
       }
     });
 
+    // CSV upload endpoint
+    this.app.post('/api/agents/upload', upload.single('file'), async (req, res) => {
+      try {
+        if (!req.file) {
+          return res.status(400).json({ success: false, error: 'No file uploaded' });
+        }
+        const agents = [];
+        const stream = require('stream');
+        const bufferStream = new stream.PassThrough();
+        bufferStream.end(req.file.buffer);
+        bufferStream.pipe(csvParser())
+          .on('data', (row) => {
+            agents.push(row);
+          })
+          .on('end', async () => {
+            await this.csvService.addAgents(agents);
+            res.json({ success: true, message: 'Agents uploaded successfully', count: agents.length });
+          })
+          .on('error', (error) => {
+            res.status(500).json({ success: false, error: error.message });
+          });
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
     // Dashboard route
     this.app.get('/dashboard', (req, res) => {
       const isServerless = !!process.env.VERCEL;
@@ -384,6 +414,11 @@ class RealEstateScraperAPI {
 
                 <div id="status"></div>
                 <div class="log" id="log">Dashboard loaded. Click buttons to interact with the scraper...</div>
+
+                <form id="uploadForm" enctype="multipart/form-data" style="margin-bottom:20px;text-align:center;">
+                  <input type="file" name="file" accept=".csv" required />
+                  <button class="button" type="submit">⬆️ Upload Agents CSV</button>
+                </form>
             </div>
 
             <script>
@@ -451,6 +486,25 @@ class RealEstateScraperAPI {
                         showStatus('Error sending emails', 'error');
                     }
                 }
+
+                document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+                  e.preventDefault();
+                  const formData = new FormData(this);
+                  log('Uploading agents...');
+                  const response = await fetch('/api/agents/upload', {
+                    method: 'POST',
+                    body: formData
+                  });
+                  const result = await response.json();
+                  if (result.success) {
+                    log('Agents uploaded: ' + result.count, 'success');
+                    showStatus('Agents uploaded successfully!', 'success');
+                    refreshStats();
+                  } else {
+                    log('Upload failed: ' + result.error, 'error');
+                    showStatus('Upload failed: ' + result.error, 'error');
+                  }
+                });
 
                 function log(message, type = 'info') {
                     const logDiv = document.getElementById('log');

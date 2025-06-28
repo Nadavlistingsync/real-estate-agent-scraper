@@ -3,15 +3,15 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { RateLimiterMemory } = require('rate-limiter-flexible');
 
-const EmailSender = require('./emailSender');
-const CSVService = require('./services/csvService');
-const { logger, apiLogger, logError } = require('./utils/logger');
-const config = require('./config/config');
+const EmailSender = require('../src/emailSender');
+const CSVService = require('../src/services/csvService');
+const { logger, apiLogger, logError } = require('../src/utils/logger');
+const config = require('../src/config/config');
 
 // Conditionally import scraper to handle serverless environment
 let ScraperOrchestrator;
 try {
-  ScraperOrchestrator = require('./scraper');
+  ScraperOrchestrator = require('../src/scraper');
 } catch (error) {
   logger.warn('Scraper not available in serverless environment', { error: error.message });
   ScraperOrchestrator = null;

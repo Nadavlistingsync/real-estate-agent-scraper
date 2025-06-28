@@ -1,11 +1,18 @@
 require('dotenv').config();
 
+function getEnvVar(keys, label) {
+  for (const key of keys) {
+    if (process.env[key]) return process.env[key];
+  }
+  throw new Error(`Missing required configuration: ${label} (tried: ${keys.join(', ')})`);
+}
+
 const config = {
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: getEnvVar(['SMTP_USER', 'EMAIL_USER'], 'smtp.user'),
+    pass: getEnvVar(['SMTP_PASS', 'EMAIL_PASS'], 'smtp.pass'),
     secure: false
   },
   email: {
@@ -27,7 +34,8 @@ const config = {
   server: {
     port: parseInt(process.env.PORT) || 3000,
     env: process.env.NODE_ENV || 'development'
-  }
+  },
+  dailyEmailLimit: getEnvVar(['DAILY_EMAIL_LIMIT'], 'dailyEmailLimit')
 };
 
 // Validate required configuration

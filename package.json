@@ -19,6 +19,7 @@
   "author": "Nadav Benedek",
   "license": "MIT",
   "dependencies": {
+    "@supabase/supabase-js": "^2.50.2",
     "axios": "^1.10.0",
     "cheerio": "^1.1.0",
     "cors": "^2.8.5",

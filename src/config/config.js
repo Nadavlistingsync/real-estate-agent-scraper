@@ -5,6 +5,8 @@ function getEnvVar(key, label) {
   throw new Error(`Missing required configuration: ${label} (expected env var: ${key})`);
 }
 
+const isVercel = !!process.env.VERCEL;
+
 const config = {
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -28,7 +30,7 @@ const config = {
   },
   logging: {
     level: process.env.LOG_LEVEL || 'info',
-    file: process.env.LOG_FILE || 'logs/scraper.log'
+    file: isVercel ? '/tmp/logs/scraper.log' : 'logs/scraper.log'
   },
   server: {
     port: parseInt(process.env.PORT) || 3000,

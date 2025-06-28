@@ -9,8 +9,8 @@ const config = {
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
-    user: getEnvVar('EMAIL_USER', 'email.user'),
-    pass: getEnvVar('EMAIL_PASS', 'email.pass'),
+    user: getEnvVar('SMTP_USER', 'smtp.user'),
+    pass: getEnvVar('SMTP_PASS', 'smtp.pass'),
     from: getEnvVar('EMAIL_FROM', 'email.from'),
     secure: false
   },
@@ -50,8 +50,8 @@ for (const field of requiredFields) {
 }
 
 console.log('Vercel ENV VARS:', Object.keys(process.env));
-console.log('EMAIL_USER:', process.env.EMAIL_USER);
-console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***' : undefined);
+console.log('SMTP_USER:', process.env.SMTP_USER);
+console.log('SMTP_PASS:', process.env.SMTP_PASS ? '***' : undefined);
 console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
 console.log('DAILY_EMAIL_LIMIT:', process.env.DAILY_EMAIL_LIMIT);
 

@@ -15,7 +15,7 @@ const config = {
     secure: false
   },
   email: {
-    from: process.env.FROM_EMAIL,
+    from: process.env.EMAIL_FROM,
     fromName: process.env.FROM_NAME || 'Nadav',
     maxPerDay: parseInt(process.env.MAX_EMAILS_PER_DAY) || 50,
     delay: parseInt(process.env.EMAIL_DELAY) || 10000,

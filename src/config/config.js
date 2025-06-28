@@ -50,5 +50,9 @@ for (const field of requiredFields) {
 }
 
 console.log('Vercel ENV VARS:', Object.keys(process.env));
+console.log('EMAIL_USER:', process.env.EMAIL_USER);
+console.log('EMAIL_PASS:', process.env.EMAIL_PASS ? '***' : undefined);
+console.log('EMAIL_FROM:', process.env.EMAIL_FROM);
+console.log('DAILY_EMAIL_LIMIT:', process.env.DAILY_EMAIL_LIMIT);
 
 module.exports = config; 

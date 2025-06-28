@@ -58,8 +58,8 @@ class ScraperOrchestrator {
       // Remove duplicates
       const uniqueAgents = this.removeDuplicates(agents);
       
-      // Save to CSV
-      await this.csvService.saveAgentsToCSV(uniqueAgents);
+      // Save to Supabase
+      await this.csvService.addAgents(uniqueAgents);
       
       this.stats.endTime = new Date();
       this.stats.totalScraped = uniqueAgents.length;

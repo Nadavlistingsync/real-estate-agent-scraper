@@ -502,10 +502,12 @@ class RealEstateScraperAPI {
   }
 }
 
-// Start the API server
+// Start the API server (for local development only)
 if (require.main === module) {
   const api = new RealEstateScraperAPI();
   api.start();
 }
 
-module.exports = RealEstateScraperAPI; 
+// Vercel serverless export
+const api = new RealEstateScraperAPI();
+module.exports = api.app; 

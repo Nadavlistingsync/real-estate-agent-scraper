@@ -1,0 +1,40 @@
+{
+  "name": "Real Estate Agent Scraper",
+  "description": "A comprehensive real estate agent scraper with email automation",
+  "repository": "https://github.com/Nadavlistingsync/real-estate-agent-scraper",
+  "logo": "https://node-js-sample.herokuapp.com/node.png",
+  "keywords": ["node", "express", "real-estate", "scraper", "email"],
+  "env": {
+    "NODE_ENV": {
+      "description": "Environment (development/production)",
+      "value": "production"
+    },
+    "PORT": {
+      "description": "Port for the web server",
+      "value": "3000"
+    },
+    "EMAIL_USER": {
+      "description": "Gmail address for sending emails",
+      "required": true
+    },
+    "EMAIL_PASS": {
+      "description": "Gmail app password for sending emails",
+      "required": true
+    },
+    "DAILY_EMAIL_LIMIT": {
+      "description": "Maximum emails per day",
+      "value": "50"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+} 

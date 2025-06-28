@@ -14,13 +14,9 @@ yarn-error.log*
 # Logs
 logs/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
 
 # Runtime data
-pids
+pids/
 *.pid
 *.seed
 *.pid.lock
@@ -113,19 +109,15 @@ temp/
 ehthumbs.db
 Thumbs.db
 
-# Project specific
+# CSV files (keep backup copies)
 agents.csv
-agents_backup_*.csv
-logs/
-*.log
+!agents.csv.backup
+
+# Email logs
 email_log.json
-scraper.log
-error.log
 
-# Screenshots and test artifacts
+# Screenshots (if any)
 screenshots/
-test-results/
 
-# Backup files
-*.bak
-*.backup 
+# Puppeteer cache
+.puppeteer/ 

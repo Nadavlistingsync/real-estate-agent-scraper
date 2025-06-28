@@ -1,116 +1,132 @@
-# Real Estate Agent Scraper & Email Automation
+# 🏠 Real Estate Agent Scraper
 
-A full-stack Node.js application that scrapes real estate agent directories and sends personalized cold emails with AI tool offers.
+A comprehensive Node.js application that scrapes real estate agent directories, stores data in CSV format, and sends personalized cold emails with a beautiful web dashboard for monitoring and control.
 
-## Features
+## ✨ Features
 
-- **Multi-Site Scraping**: Scrapes Zillow Agent Finder and Realtor.com Agent Search
-- **Email Extraction**: Automatically finds agent emails from profiles and company websites
-- **US Filtering**: Only includes US-based agents
-- **Personalized Emails**: Sends customized cold emails with agent's first name
-- **Rate Limiting**: Respects daily email limits and includes delays
-- **Retry Logic**: Handles email failures with exponential backoff
-- **CSV Storage**: Stores all agent data in structured CSV format
-- **Web API**: RESTful API for controlling the system
-- **Comprehensive Logging**: Detailed logs for debugging and monitoring
-- **CAN-SPAM Compliant**: Includes unsubscribe options
+- **Multi-source Scraping**: Scrapes from Realtor.com, Zillow, and other real estate platforms
+- **Email Automation**: Sends personalized cold emails with rate limiting and tracking
+- **Web Dashboard**: Beautiful UI for monitoring scraping stats and email campaigns
+- **CSV Management**: Automatic backup, duplicate removal, and data export
+- **API Endpoints**: RESTful API for integration with other services
+- **Rate Limiting**: Built-in protection against API abuse
+- **Logging**: Comprehensive logging for debugging and monitoring
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Installation
+### Local Development
 
-```bash
-# Clone the repository
-git clone <repository-url>
-cd real-estate-scraper
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/Nadavlistingsync/real-estate-agent-scraper.git
+   cd real-estate-agent-scraper
+   ```
 
-# Install dependencies
-npm install
-```
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### 2. Configuration
+3. **Set up environment variables**
+   ```bash
+   cp env.example .env
+   # Edit .env with your email credentials
+   ```
 
-Copy the example environment file and configure your settings:
+4. **Start the application**
+   ```bash
+   npm start
+   ```
 
-```bash
-cp env.example .env
-```
+5. **Access the dashboard**
+   - Open http://localhost:3000/dashboard
+   - Monitor scraping and email statistics
+   - Control scraping and email campaigns
 
-Edit `.env` with your SMTP credentials:
+## 🌐 Deployment Options
 
-```env
-# SMTP Configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
+### Option 1: Heroku (Recommended)
 
-# Email Configuration
-FROM_EMAIL=your-email@gmail.com
-FROM_NAME=Nadav
+1. **Deploy to Heroku**
+   ```bash
+   # Install Heroku CLI
+   heroku create your-app-name
+   heroku config:set EMAIL_USER=your-email@gmail.com
+   heroku config:set EMAIL_PASS=your-app-password
+   heroku config:set DAILY_EMAIL_LIMIT=50
+   git push heroku main
+   ```
 
-# Scraping Configuration
-MAX_AGENTS_PER_SITE=100
-SCRAPING_DELAY=2000
-MAX_RETRIES=3
+2. **Open your app**
+   ```bash
+   heroku open
+   ```
 
-# Email Sending Configuration
-MAX_EMAILS_PER_DAY=50
-EMAIL_DELAY=10000
-EMAIL_RETRY_ATTEMPTS=3
-```
+### Option 2: Railway
 
-### 3. Usage
+1. **Connect your GitHub repository to Railway**
+2. **Set environment variables in Railway dashboard**
+3. **Deploy automatically on push**
 
-#### Run Scraping Only
-```bash
-npm run scrape
-```
+### Option 3: Render
 
-#### Send Emails Only
-```bash
-# Send to all agents with emails
-npm run email
+1. **Connect your GitHub repository to Render**
+2. **Set environment variables in Render dashboard**
+3. **Deploy automatically on push**
 
-# Send to specific number of agents
-node src/emailSender.js 25
+### Option 4: DigitalOcean App Platform
 
-# Send test email
-node src/emailSender.js 1 your-test-email@example.com
-```
+1. **Connect your GitHub repository to DigitalOcean**
+2. **Set environment variables in DigitalOcean dashboard**
+3. **Deploy automatically on push**
 
-#### Start Web API
-```bash
-npm start
-```
+## 📧 Email Setup
 
-#### Development Mode
-```bash
-npm run dev
-```
+1. **Enable 2-factor authentication on your Gmail account**
+2. **Generate an App Password**
+3. **Set environment variables:**
+   - `EMAIL_USER`: Your Gmail address
+   - `EMAIL_PASS`: Your Gmail app password
+   - `DAILY_EMAIL_LIMIT`: Maximum emails per day (default: 50)
 
-## API Endpoints
+## 🔧 API Endpoints
 
-### Scraping
-- `POST /api/scrape` - Start scraping process
-- `GET /api/stats/scraping` - Get scraping statistics
-
-### Email
-- `POST /api/email/send` - Send bulk emails
-- `POST /api/email/test` - Send test email
-- `GET /api/stats/email` - Get email statistics
-- `POST /api/email/reset` - Reset daily email counter
-- `POST /api/email/clear-log` - Clear email log
-
-### Data
-- `GET /api/agents` - Get agents (with pagination)
-- `POST /api/csv/backup` - Backup CSV file
-- `POST /api/csv/remove-duplicates` - Remove duplicate agents
-
-### Health
+### Core Endpoints
+- `GET /` - Root endpoint with links
+- `GET /dashboard` - Web dashboard
 - `GET /health` - Health check
 
-## Project Structure
+### Scraping Endpoints
+- `POST /api/scrape` - Start scraping
+- `GET /api/stats/scraping` - Get scraping statistics
+- `GET /api/agents` - Get scraped agents
+
+### Email Endpoints
+- `POST /api/email/send` - Send emails
+- `GET /api/stats/email` - Get email statistics
+- `POST /api/email/reset` - Reset daily counter
+- `POST /api/email/clear-log` - Clear email log
+
+### Management Endpoints
+- `POST /api/csv/backup` - Backup CSV data
+- `POST /api/csv/remove-duplicates` - Remove duplicate agents
+
+## 📊 Dashboard Features
+
+- **Real-time Statistics**: View total agents, emails sent, and remaining daily limit
+- **One-click Actions**: Start scraping and send emails with button clicks
+- **Live Logging**: See real-time activity in the dashboard
+- **Status Updates**: Get immediate feedback on operations
+
+## 🔒 Security Features
+
+- **Rate Limiting**: Prevents API abuse
+- **CORS Protection**: Secure cross-origin requests
+- **Helmet.js**: Security headers
+- **Input Validation**: Sanitized inputs
+- **Error Handling**: Graceful error responses
+
+## 📁 Project Structure
 
 ```
 src/
@@ -118,169 +134,48 @@ src/
 │   └── config.js          # Configuration management
 ├── scrapers/
 │   ├── baseScraper.js     # Base scraper class
-│   ├── zillowScraper.js   # Zillow agent scraper
-│   └── realtorScraper.js  # Realtor.com agent scraper
+│   ├── realtorScraper.js  # Realtor.com scraper
+│   ├── zillowScraper.js   # Zillow scraper
+│   └── testScraper.js     # Test scraper
 ├── services/
-│   ├── csvService.js      # CSV file operations
-│   └── emailService.js    # Email sending service
+│   ├── csvService.js      # CSV operations
+│   └── emailService.js    # Email operations
 ├── utils/
-│   ├── logger.js          # Logging utilities
+│   ├── logger.js          # Logging utility
 │   └── emailUtils.js      # Email utilities
-├── scraper.js             # Main scraping orchestrator
-├── emailSender.js         # Email sending orchestrator
-└── index.js               # Web API server
+├── emailSender.js         # Email automation
+├── scraper.js             # Main scraper orchestration
+└── index.js               # Express server and API
 ```
 
-## Email Template
-
-The system sends personalized cold emails with the following template:
-
-**Subject:** Can I build you a custom AI tool?
-
-**Body:**
-```
-Hey [FirstName],
-
-I run an agency where we build custom AI tools and software for real estate agents.
-
-Give me your biggest problem and I'll build a solution for free.
-
-If you like it, you pay. If you don't, send it back and we figure out how to make it better.
-
-Want to try?
-
-– Nadav
-
----
-Reply STOP to opt out
-```
-
-## Configuration Options
-
-### Scraping Settings
-- `MAX_AGENTS_PER_SITE`: Maximum agents to scrape per site (default: 100)
-- `SCRAPING_DELAY`: Delay between scraping actions in ms (default: 2000)
-- `MAX_RETRIES`: Maximum retry attempts for failed operations (default: 3)
-
-### Email Settings
-- `MAX_EMAILS_PER_DAY`: Daily email limit (default: 50)
-- `EMAIL_DELAY`: Delay between emails in ms (default: 10000)
-- `EMAIL_RETRY_ATTEMPTS`: Email retry attempts (default: 3)
-
-### Server Settings
-- `PORT`: API server port (default: 3000)
-- `NODE_ENV`: Environment (development/production)
-
-## Logging
-
-The system provides comprehensive logging:
-
-- **File Logs**: Stored in `logs/` directory
-- **Console Logs**: Available in development mode
-- **Email Logs**: Track sent/failed emails in `logs/email_log.json`
-
-### Log Levels
-- `error`: Errors and exceptions
-- `warn`: Warnings and non-critical issues
-- `info`: General information and progress
-- `debug`: Detailed debugging information
-
-## Data Format
-
-The CSV file (`agents.csv`) contains the following columns:
-
-- `name`: Agent's full name
-- `email`: Agent's email address
-- `city`: Agent's city
-- `state`: Agent's state
-- `company`: Agent's company/brokerage
-- `profile_url`: Agent's profile URL
-
-## Security Features
-
-- **Rate Limiting**: API rate limiting to prevent abuse
-- **Input Validation**: All inputs are validated and sanitized
-- **Error Handling**: Comprehensive error handling without exposing sensitive data
-- **CORS**: Configurable CORS settings
-- **Helmet**: Security headers via Helmet middleware
-
-## Monitoring & Debugging
-
-### Automatic Feedback Loop
-The system includes built-in monitoring:
-
-1. **Progress Tracking**: Real-time scraping progress
-2. **Email Status**: Track sent/failed emails
-3. **Error Logging**: Detailed error logs with context
-4. **Statistics**: Comprehensive statistics for both scraping and emailing
-5. **Health Checks**: API health monitoring
-
-### Debugging Tips
-
-1. **Check Logs**: Review `logs/scraper.log` for detailed information
-2. **Email Logs**: Check `logs/email_log.json` for email status
-3. **API Health**: Use `GET /health` to check system status
-4. **Test Emails**: Use test email functionality before bulk sending
-5. **Rate Limits**: Monitor daily email limits and API rate limits
-
-## Troubleshooting
-
-### Common Issues
-
-1. **SMTP Authentication Failed**
-   - Verify SMTP credentials in `.env`
-   - Use app passwords for Gmail
-   - Check firewall/network settings
-
-2. **Scraping Fails**
-   - Check internet connection
-   - Verify target websites are accessible
-   - Review scraping logs for specific errors
-
-3. **Rate Limiting**
-   - Respect daily email limits
-   - Increase delays between requests
-   - Use different IP addresses if needed
-
-4. **Memory Issues**
-   - Reduce `MAX_AGENTS_PER_SITE`
-   - Increase `SCRAPING_DELAY`
-   - Monitor system resources
-
-## Legal Compliance
-
-- **CAN-SPAM Act**: Includes unsubscribe options
-- **Rate Limiting**: Respects website terms of service
-- **Data Privacy**: Only collects publicly available information
-- **Email Best Practices**: Follows email marketing best practices
-
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests if applicable
+4. Test thoroughly
 5. Submit a pull request
 
-## License
+## 📄 License
 
-MIT License - see LICENSE file for details
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Support
+## ⚠️ Disclaimer
+
+This tool is for educational and legitimate business purposes only. Please ensure compliance with:
+- Website terms of service
+- Email regulations (CAN-SPAM, GDPR)
+- Local laws and regulations
+- Rate limiting and respectful scraping practices
+
+## 🆘 Support
 
 For issues and questions:
-1. Check the logs for error details
-2. Review the troubleshooting section
-3. Create an issue with detailed information
-4. Include relevant log files and configuration
+1. Check the logs in the dashboard
+2. Review the API documentation
+3. Open an issue on GitHub
+4. Check the troubleshooting section
 
-## Changelog
+---
 
-### v1.0.0
-- Initial release
-- Multi-site scraping (Zillow, Realtor.com)
-- Email automation with personalization
-- Web API for control and monitoring
-- Comprehensive logging and error handling
-- Rate limiting and retry logic
-- CSV data storage and management 
+**Made with ❤️ by Nadav Benedek** 

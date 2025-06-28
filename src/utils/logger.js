@@ -7,6 +7,9 @@ const config = require('../config/config');
 const logsDir = path.dirname(config.logging.file);
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
+  console.log(`[logger] Created logs directory at: ${logsDir}`);
+} else {
+  console.log(`[logger] Logs directory already exists at: ${logsDir}`);
 }
 
 // Custom format for console output

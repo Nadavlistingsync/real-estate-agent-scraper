@@ -1,18 +1,17 @@
 require('dotenv').config();
 
-function getEnvVar(keys, label) {
-  for (const key of keys) {
-    if (process.env[key]) return process.env[key];
-  }
-  throw new Error(`Missing required configuration: ${label} (tried: ${keys.join(', ')})`);
+function getEnvVar(key, label) {
+  if (process.env[key]) return process.env[key];
+  throw new Error(`Missing required configuration: ${label} (expected env var: ${key})`);
 }
 
 const config = {
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',
     port: parseInt(process.env.SMTP_PORT) || 587,
-    user: getEnvVar(['SMTP_USER', 'EMAIL_USER'], 'smtp.user'),
-    pass: getEnvVar(['SMTP_PASS', 'EMAIL_PASS'], 'smtp.pass'),
+    user: getEnvVar('EMAIL_USER', 'email.user'),
+    pass: getEnvVar('EMAIL_PASS', 'email.pass'),
+    from: getEnvVar('EMAIL_FROM', 'email.from'),
     secure: false
   },
   email: {
@@ -35,13 +34,11 @@ const config = {
     port: parseInt(process.env.PORT) || 3000,
     env: process.env.NODE_ENV || 'development'
   },
-  dailyEmailLimit: getEnvVar(['DAILY_EMAIL_LIMIT'], 'dailyEmailLimit')
+  dailyEmailLimit: getEnvVar('DAILY_EMAIL_LIMIT', 'dailyEmailLimit')
 };
 
 // Validate required configuration
 const requiredFields = [
-  'smtp.user',
-  'smtp.pass',
   'email.from'
 ];
 
@@ -51,5 +48,7 @@ for (const field of requiredFields) {
     throw new Error(`Missing required configuration: ${field}`);
   }
 }
+
+console.log('Vercel ENV VARS:', Object.keys(process.env));
 
 module.exports = config; 
